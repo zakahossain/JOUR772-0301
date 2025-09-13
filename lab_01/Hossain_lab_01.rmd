@@ -1,0 +1,105 @@
+---
+title: "lab_01"
+author: "Derek Willis / Rob Wells"
+date: "2025-09-10"
+output: html_document
+---
+
+Zaka Hossain
+09/12/2025
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Turn off scientific notation
+options(scipen=999)
+```
+
+## About this lab
+
+To complete this lab, you need to: \* run existing code as directed (look for **Task**). \* modify existing code as directed (look for **Task**). \* write code in empty codeblocks provided to answer questions included (look for **Q**). \* write out the answer in the form of a complete sentence in the space given (look for **A**). When you are finished, commit changes and push to your personal GitHub repo, then submit the URL to this document on ELMS.
+
+Remember to add any new verbs or concepts to your class reference notebook!
+
+## Load libraries and establish settings
+
+**Task** Run the codeblock below to load the Tidyverse. To run the codeblock, hit the little green play button in the upper right corner of the gray area (the codeblock) below.
+
+```{r}
+# Load the tidyverse. If you have not installed the tidyverse already, remove the # from the next line and run it first.  
+# install.packages('tidyverse')
+library(tidyverse)
+```
+
+## Load Data
+
+We're going to load the UMD courses data.
+
+**Task** Run the codeblock below to load the data, which is contained in an RDS file.
+
+```{r}
+umd_courses <- read_rds("lab_01.rds")
+```
+
+## Answer questions
+
+**Q1** Which department has the highest mean (average) number of seats for its classes? You need to show the department with the highest average first. Which one is the most surprising/interesting to you? 
+
+**A1** "Computer, Math, and Natural Sciences" is the department with the highest mean (average) number of seats for its classes. Interestingly it is not the department with highest number of seats -- nowhere near, it only means that it has the maximum number of seats per class. Having less classes, boosts the mean.
+
+```{r}
+umd_courses |>
+group_by(department) |>
+summarise(
+count_classes = n(),
+total_seats = sum(seats),
+mean_seats = mean(seats),
+) |>
+arrange(desc(mean_seats))
+```
+
+**Q2** Find out the greatest number of times any individual class has been offered in our dataset. Your result should sort to show the greatest number of classes first. If several classes are tied for the most offered, describe how many classes are ranked in the top category for offerings.
+**A2** The maximum number of times any individual class has been offered in our dataset is 29. 145 classes have been offered for 29 times each.
+#Note to self: Eyeball how many classes are ranked in the top category for offerings.
+
+```{r}
+umd_courses |>
+group_by(id) |>
+summarise(
+count_classes = n(),
+total_seats = sum(seats),
+mean_seats = mean(seats),
+) |>
+arrange(desc(count_classes))
+```
+
+**Q3** Count the number of courses for each instructor and department. Which instructor has taught the most? HINT: To filter out blank and missing values from a column, drop_na() is your friend.
+**A3** Jason Kuo has taught the most courses.
+
+```{r}
+umd_courses |>
+  drop_na(instructors) |>   
+  group_by(instructors) |>
+  summarise(
+    count_classes = n()
+  ) |>
+  arrange(desc(count_classes))
+```
+
+**Q4** Given the results for Q3, what would have made it easier to find the answer? You don't have to know *how* to accomplish this; I want you to describe in words what would make the answer easier to see. How confident are you that the answer you got is the right one, and why? 
+**A4** 
+#It would have been easier if:
+#1. there was no TBA.
+#2. the instructors in the dataset were not grouped in cases where they taught the same class. Since the instructors are grouped as "instructor A; instructor B" in cases where two or more instructors teach the same class, the numbers are not accurate. The dataset has rows for "instructor A" and for "instructor A; instructor B", which means data for instructor A is not consolidated in one row. Two workarounds, either:
+#a. split the rows with two or more instructors (eg. "instructor A; instructor B") into two or more rows respectively and then count.
+#b. count every row where "instructor A" appears regardless of whether it is the only data in that cell or there are other instructor(s) in it.
+#I am not confident I have the correct answer. Although, grouped instructors do not appear for the first 111 rows, on row 112 we see 3 instructors share the same course that has 41 classes. This can sway the data for these instructors if added to their total individually. 
+
+**Q5** Take one of the questions you listed in the final question of the pre_lab and try to answer it here in code. If you don't know how to fully answer it, write what code you can and describe in words what else you would need to do. If you got an answer, is it interesting? 
+
+**A5** Unfortunately, the questions I asked are either not code related or complex. I think only the last part of my last question from pre_lab_01 can be answered by code -- "3. Why does the university have more seats for Business and Management compared to Communications? Is it because of the demands of the job market or the interest students take in one over the other?" I would need to compare seats offered versus students registered (which is not in this dataset)
+
+```{r}
+
+```
