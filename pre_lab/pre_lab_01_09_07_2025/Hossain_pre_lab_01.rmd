@@ -263,6 +263,6 @@ No code here; I want you to provide three questions that this data suggests to y
 
 1.  Do students drop classes after the first month of the each session, that is the fall and winter sessions in August and January respectively?
 
-2.  The greater mean than median for most courses suggests that have a handful of extra large classes with lots of seats that is skewing the mean. There are also classes with zero seats, should those classes be dropped permanently if they have had zero enrollment for say n number of terms?
+2.  The greater mean than the median for most departments suggests that have a handful of extra large courses with lots of seats that is skewing the mean. There are also courses with zero seats, should those courses be dropped permanently if they have had zero enrollment for say n number of terms?
 
 3.  Why does the university have more seats for Business and Management compared to Communications? Is it because of the demands of the job market or the interest students take in one over the other?
