@@ -48,27 +48,77 @@ courses_on_climate_1_seat <- umd_courses |>
 
 **Q3** Which departments offered the most courses in the Fall 2024 term? And which departments in that term have at least one syllabus posted? Answer both of those questions and then compare the top five departments - how are they different?
 
-**A3.**
+**A3.** Business and Management.
 
 ```{r}
 courses_fall_2024 <- umd_courses |>
-  filter(term == "202408")
+  filter(term == "202408") |>
 group_by(department) |>
+ summarize(course_count = n()) |>
+  arrange(desc(course_count))
+
+dept_with_syllabus <- umd_courses |>
+  filter(term == "202408" & syllabus_count >=1 ) |>
+  group_by(department) |>
  summarize(course_count = n()) |>
   arrange(desc(course_count))
 ```
 
-**Q4.** Using the Maryland campaign expenses data, change the datatype of the expenditure_date column so that it is a date and not a chr, saving the result as a new dataframe. Then create a new column for the month based on expenditure_date. Then write code that shows total amount spent each month by Wes Moore's committee (you'll need to search the data to find the exact name, and we're not looking in payee_name). Write a sentence describing the pattern of spending over time. **A4.**
+**Q4.** Using the Maryland campaign expenses data, change the datatype of the expenditure_date column so that it is a date and not a chr, saving the result as a new dataframe. Then create a new column for the month based on expenditure_date. Then write code that shows total amount spent each month by Wes Moore's committee (you'll need to search the data to find the exact name, and we're not looking in payee_name). Write a sentence describing the pattern of spending over time. 
+**A4.** 3119129.8; October 2022
 
 ```{r}
+maryland_expenses_new <- maryland_expenses |> 
+  mutate(expenditure_date=mdy(expenditure_date)) |>
+   mutate(month = floor_date(expenditure_date, "month")) |>
+  filter(committee_name == "Moore  Wes For Maryland") |>
+  group_by(month) |>
+  summarise(total_amount = sum(amount)) |>
+  arrange(desc(total_amount))
+
 ```
 
 **Q5.** Using case_when(), create a column in the Maryland expenses data called `spending_location` indicating whether each record spent money in Maryland or outside Maryland. For records that are in Maryland, make the new column's value "In-state" and for all others, make it "Out of state". Then write code that shows the total amount of money spent in each category and describe the results. You can do this in one statement or break it up into two statements (saving the new column to your dataframe). **A5**
 
 ```{r}
+maryland_expenses_with_state <- maryland_expenses |>
+  mutate(
+    spending_location = case_when(
+    str_detect(address, " Maryland ") ~ "in-state", 
+        .default = "out of state"
+      ) 
+  )|>
+  group_by(spending_location) |>
+  summarize(total = sum(amount,na.rm=TRUE)) |>
+  arrange(desc(total))
 ```
 
-**Q6.** Choose your own adventure: using either the UMD courses or campaign expenses data, ask and answer a question that is different than the previous ones. You can use one of the ones you provided in the pre_lab. **A6.**
+**Q6.** Choose your own adventure: using either the UMD courses or campaign expenses data, ask and answer a question that is different than the previous ones. You can use one of the ones you provided in the pre_lab. 
+# Q from pre_lab: What percent of funds came from an institution v. from an individual?
+**A6.**
 
 ```{r}
+with_contributor_type <- maryland_expenses |>
+  mutate(
+    contributor_type = case_when(
+      str_detect(payee_type, "Candidate Committee") ~ "Non_individual",
+       str_detect(payee_type, "Self (Candidate)")  ~ "Individual",
+      .default = "Non-Individual"
+    )
+  )
+
+```
+
+```{r}
+by_contri_type <- maryland_expenses |>
+  mutate(
+    contributor_type = case_when(
+      str_detect(payee_type, "Individual") ~ "Individual",
+       str_detect(payee_type, "Self (Candidate)")  ~ "Self (Candidate)",
+      .default = "Non-Individual"
+    )
+  ) |>
+  group_by(contributor_type) |>
+  summarize(total = sum(amount)) |>
+  arrange(desc(total))
 ```

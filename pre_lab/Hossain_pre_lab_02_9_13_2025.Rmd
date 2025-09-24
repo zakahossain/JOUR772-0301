@@ -169,7 +169,8 @@ Take a look at that first column, expenditure_date. It *looks* like a date, but 
 **Task** Run the following code and describe the change in the expenditure_date column.
 
 ```{r}
-maryland_expenses <- maryland_expenses |> mutate(expenditure_date=mdy(expenditure_date))
+maryland_expenses <- maryland_expenses |> 
+  mutate(expenditure_date=mdy(expenditure_date))
 
 head(maryland_expenses)
 ```
