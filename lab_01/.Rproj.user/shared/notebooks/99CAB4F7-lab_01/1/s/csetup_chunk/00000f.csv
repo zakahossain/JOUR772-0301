@@ -1,3 +1,0 @@
-"0","knitr::opts_chunk$set(echo = TRUE)"
-"0","# Turn off scientific notation"
-"0","options(scipen=999)"
