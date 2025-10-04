@@ -113,27 +113,19 @@ Shuman Eve T. - Prince George's County Council, District 3, Maryland
 
 **A**: YOUR CODE HERE
 ```{r}
-Moore  Wes For Maryland
-Moore Miller For Maryland Slate
+moore_media_expenses <- media_expenses_cleaned |>
+  filter(committee_name == "Moore  Wes For Maryland" | 
+         committee_name == "Moore Miller For Maryland Slate") |>
+  group_by(payee_clean) |>
+  summarise(total_amount = sum(amount, na.rm = TRUE)) |>
+  arrange(desc(total_amount))
+
+head(moore_media_expenses, 10)
 ```
 
 **b.** Describe the business of the top recipient.
-** WRITE THE ANSWER**
 
-**A4**: YOUR CODE HERE
-```{r}
-
-
-
-```
-
-**a.** Who are the biggest recipients of media expenses by the Democratic primary winner for governor? Hint: that person has two committees, the second one with his running mate.
-
-
-**b.** Describe the business of the top recipient.
-
-
-
+SKDK is an advertising agency in Washington, D.C. which has expertise in strategic communications and has worked with Fortune 500 companies, non-profits, philanthropic organizations, labor unions and political committees and candidates.
 
 
 **Q5.** Examine the standardized purpose column in the media expenses data. Write code to generate a list of the committees with the total amount of spending on online advertising. 
@@ -143,11 +135,41 @@ Moore Miller For Maryland Slate
 
 **A5.**YOUR CODE HERE
 
+The two lists show completely different committees at the top - online advertising leaders like Calvin Ball ($930,681) and MSEA PAC ($908,230) don't appear in top Facebook spenders list.
+Facebook leaders like Jain ($62,357) and Franchot Anderson-Walker ($57,928) rank much lower in overall online spending.
+Casa in Action PAC appears in both lists - ranks #4 in Facebook spending ($20,647.83) versus #5 in total online spending ($536,496.16), suggesting they diversified heavily.
+
+Of the top 5 committees who spent the most on Facebook ads, none appear to have spent all online dollars on Facebook. Casa in Action spent $20,647 on Facebook but $536,496 total online - only 3.8% on Facebook. This means Meta/Facebook was not the dominant online advertising platform for Maryland's biggest digital spenders in 2022 and that committees diversified their spendings.
 
 ```{r}
+online_ad_spend <- media_expenses_cleaned |>
+  filter(str_detect(str_to_upper(expense_purpose), "ONLINE")) |>
+  group_by(committee_name) |>
+  summarise(total_online = sum(amount, na.rm = TRUE)) |>
+  arrange(desc(total_online))
 
+head(online_ad_spend, 10)
 ```
 
 **Q6** Your editor asks you to summarize your findings about spending on Facebook by Maryland political candidates. How much do we know and what don't we know? What's the best story idea you've found here?
 
 **A6** ** WRITE THE ANSWER**
+
+Findings:
+-Top Facebook spenders were mostly gubernatorial candidates and PACs
+- For some, Facebook spending represented small fraction of total online advertising - Casa in Action spent only 3.8% of online budget on Facebook
+- Major online advertisers like Calvin Ball and MSEA PAC barely used Facebook, suggesting platform diversification
+- Wes Moore's winning campaign spent heavily on media through SKDK agency rather than direct Facebook advertising
+
+What we do NOT know:
+- Whether Facebook spending correlated with electoral success
+- Exact timing of ad purchases during campaign cycle
+- Ad content, targeting strategies, or audience reach
+- Total digital ecosystem spending (Google, YouTube, streaming platforms)
+- ROAS, ROI or other engagement metrics
+
+Story Ideas:
+
+1. Casa in Action's Digital Strategy: Examine how this PAC diversified $536K across digital platforms with minimal Facebook spending, what was the targeting strategy that avoided over-reliance on single platform.
+
+2. Winner Moore v. Heavy Facebook spenders: Juxtapose spending patterns between gubernatorial candidates who used Facebook heavily (Jain, Franchot) v. Moore who relied on traditional media firm SKDK. Explore whether Facebook served as equalizer for underfunded candidates or signals limited resources.
