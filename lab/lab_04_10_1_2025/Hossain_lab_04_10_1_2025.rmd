@@ -1,0 +1,153 @@
+---
+title: "lab_04_update"
+author: "Rob Wells/Derek Willis"
+date: "2025-10-01"
+output: html_document
+---
+Zaka Hossain 
+10/01/2025
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## About this lab
+
+To complete this lab, you need to: \* run existing code as directed (look for **Task**). \* modify existing code as directed (look for **Task**). \* write code in empty codeblocks provided to answer questions included (look for **Q**). \* write out the answer in the form of a complete sentence in the space given (look for **A**).
+
+When you are finished, commit changes and push to your personal GitHub repo, then submit the URL to this document on ELMS.
+
+## Load libraries and establish settings
+
+You'll need to load three packages for this: the tidyverse, lubridate, refinr and janitor.
+
+**Task** load these four packages.
+
+```{r}
+# Turn off scientific notation
+options(scipen=999)
+
+# load your packages
+library(tidyverse)
+library(janitor)
+library(refinr)
+```
+
+For this lab, we want to investigate spending by Maryland state and local candidates during the 2022 election. For example, we could ask how much money have candidates and committees spent on advertising on Facebook? Which vendors received the most money for media expenses? We have the data, but it's messy - names of payees are spelled differently and capitalized differently - and we need to clean it up. 
+
+
+## Load Data
+
+You'll need to load one data set, a CSV file of Maryland campaign expenditures located in the data folder called "maryland_expenses.csv"
+
+**Task** Create a codeblock below, then read the data in and assign it to an appropriate variable name. 
+--Use janitor to clean the column names
+--Convert dates into date values
+
+```{r}
+# Load the Maryland expenditures data table
+
+maryland_expenses <- read_csv("data/maryland_expenses.csv") |>
+  clean_names()
+
+```
+
+## Answer questions
+
+**Q1.** You've been assigned to write about Maryland political committees' use of Facebook advertising. There's a category column in the data that has values for different kinds of spending. One of them is "Media". You'll need to complete the following steps:
+
+a.  Create a dataframe filtered for just Media expenses.
+b.  Create a `payee_clean` column and standardize the data from `payee_name` using the `n_gram_merge' command
+
+**A1:** YOUR CODE HERE
+```{r}
+media_expenses_cleaned <- maryland_expenses |>
+  filter(expense_category == "Media") |>
+  mutate(payee_clean = n_gram_merge(payee_name))
+```
+
+
+**Q2** More cleaning of Facebook. Look carefully at variations of Facebook, bearing in mind that it changed its name in 2021: <https://about.fb.com/news/2021/10/facebook-company-is-now-meta/>).
+
+Create a new object called `expenses_summary` 
+Using case_when, create a column called `payee_FB` that will standardize all the variations on Facebook and **its parent company** in the data. 
+Filter the data in `payee_FB` for all of the standardized Facebook items.
+Then calculate the total amount of Facebook spending by each committee and present the results showing the committee that spent the most first.
+
+#Meta, facebook
+
+**A**: YOUR CODE HERE
+```{r}
+
+  expenses_summary <- media_expenses_cleaned |>
+  mutate(payee_fb = case_when(
+    str_detect(str_to_upper(payee_clean), "FACEBOOK") ~ "Facebook/Meta",
+    str_detect(str_to_upper(payee_clean), "META") ~ "Facebook/Meta")) |>
+  filter(payee_fb == "Facebook/Meta") |>
+  group_by(committee_name) |>
+  summarise(total_amount = sum(amount, na.rm = TRUE)) |>
+  arrange(desc(total_amount)) 
+
+head(expenses_summary, 10)
+```
+
+**Q3.** Let's do some research on the top committees from question 1. Look up the top 10 spenders: if they are candidate committees, what offices were they running for? 
+
+** WRITE THE ANSWER**
+**A3.**
+
+Jain Ashwani 	- election to the U.S. House to represent Maryland's 6th Congressional District.
+Franchot Anderson-Walker - Governer/Lt. Governer of Maryland
+Franchot Peter - Governer of Maryland			
+Casa in Action PAC -
+Boniface Billy - Harford County Executive, Maryland
+Baron Jon (Jonathan) - Governer of Maryland
+Jasani Salimah -  at-large seat of the Baltimore City Public Schools 
+WFP National Pac - Non-Contribution Account	
+King and Siri - Governer/Lt. Governer of Maryland
+Shuman Eve T. - Prince George's County Council, District 3, Maryland
+
+**Q4.** Examine the list of top spenders and the primary results for governor.
+
+**a.** Write code to determine this answer: Filter for the Democratic primary winner for governor (Hint: that person has two committees, the second one with his running mate). Now determine the biggest recipients of media expenses for this Democratic primary winner for governor.
+
+**A**: YOUR CODE HERE
+```{r}
+Moore  Wes For Maryland
+Moore Miller For Maryland Slate
+```
+
+**b.** Describe the business of the top recipient.
+** WRITE THE ANSWER**
+
+**A4**: YOUR CODE HERE
+```{r}
+
+
+
+```
+
+**a.** Who are the biggest recipients of media expenses by the Democratic primary winner for governor? Hint: that person has two committees, the second one with his running mate.
+
+
+**b.** Describe the business of the top recipient.
+
+
+
+
+
+**Q5.** Examine the standardized purpose column in the media expenses data. Write code to generate a list of the committees with the total amount of spending on online advertising. 
+
+--How does this list compare to the list you already generated about top Facebook spenders? 
+--Of the top 5 committees who spent the most on Facebook ads from the first list, are there any that appear to have spent *all* of their online advertising dollars on Facebook?
+
+**A5.**YOUR CODE HERE
+
+
+```{r}
+
+```
+
+**Q6** Your editor asks you to summarize your findings about spending on Facebook by Maryland political candidates. How much do we know and what don't we know? What's the best story idea you've found here?
+
+**A6** ** WRITE THE ANSWER**

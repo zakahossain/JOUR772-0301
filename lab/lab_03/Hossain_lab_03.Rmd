@@ -50,6 +50,7 @@ When you have found as many as possible, save the result to a new dataframe call
 ```{r}
 payments |>
   filter(str_detect(vendor_name, "PRINCE GEORGE") & (str_detect(vendor_name, "SCHOOL") | str_detect(vendor_name, "EDUCATION") | str_detect(vendor_name, "PGCPS"))) |>
+  
   group_by(vendor_name) |>
   summarise(count = n()) |>
   arrange(vendor_name)
