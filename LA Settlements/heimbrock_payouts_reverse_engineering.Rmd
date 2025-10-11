@@ -1,0 +1,86 @@
+---
+title: "latimesproject"
+author: "Heimbrock"
+date: "2025-10-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen=999)
+library(tidyverse)
+library(janitor)
+library(lubridate)
+```
+
+#I am documenting my code and loading libaries#
+```{r}
+library(tidyverse)
+```
+
+#Loading data#
+
+```{r}
+payouts<-rio::import('/Users/rebeccaheimbrock/Desktop/jour772/la-settlements-analysis/input/payouts.xlsx', skip=1, header=TRUE)
+#David note: skip/delete the wonky top row, make the second row into headers #Bex note: I got this code from David after fighting with Claude.
+  payouts<-payouts %>% 
+  slice_head(n=18701) %>% 
+  clean_names()
+```
+#Goal: get code to do this, somehow .. "Last budget year, the city paid out more than $200 million in legal settlements and court judgments — a record amount that was more than the city spent on its libraries or fixing its streets."
+
+```{r}
+yearly_data_sum <- payouts |> 
+  group_by(fiscal_year) |>
+  summarise(
+    total_cases = n(),
+    total_amount = sum(amount, na.rm = TRUE),
+  ) |> 
+  arrange(fiscal_year)
+#Here was my original code, which did everything I wanted except combine all instances of X year to make one data column per year: 
+#year_amount <- payouts |> 
+#group_by(fiscal_year, amount) |> 
+#summarise(total_amount=sum(amount)) |> 
+#arrange(desc(amount))
+#That didn't work, so...
+#I looked back through my R notebook and found only stringer detect functions.
+#This is what I asked Claude: How to combine all instances of a year being mentioned in a spreadsheet? Claude then asked me to explain whether the data was in its own column, and how it was formatted.
+#Claude suggested the above code with the following explanatory comment: #total_cases: number of payments made that year
+#total_amount: sum of all payments
+#avg_amount: average payment amount
+#min_amount and max_amount: smallest and largest payments
+#Thanks, Claude, but that's kind of a lot - I just want to know the total amount. So, all I included was total_amount.
+```
+
+#So, the total for 2018 is $72,829,597... that doesn't seem right. LA Times says the city paid out $200million! But, the total for 2017 is over $201million. This article was published in 2018. So, last budget year was, in fact, 2017. Yay!
+#Now it's time to read in the csv file containing totals spent on public works.
+```{r}
+dept_totals<-rio::import('/Users/rebeccaheimbrock/Desktop/jour772/la-settlements-analysis/output/department-totals.csv')
+```
+#Hey R, how much was spent on public works and libraries? 
+```{r}
+cherry_picking_data_for_maximum_effect <- dept_totals |>
+  filter(str_detect(latimes_department, 'PUBLIC WORKS|LIBRARY')) |>
+  arrange(desc(amount))
+```
+#This was my initial code...
+#> cherry_picking_data_for_maximum_effect <- dept_totals |>
+#filter(str_detect(latimes_department, 'PUBLIC WORKS', 'LIBRARY))
+
+#That didn't work. I went back to pre-lab03 and tried to string together that code, this is what I ended up with...
+#> cherry_picking_data_for_maximum_effect <- dept_totals |>
+#sort_by(amount) |>
+#filter(str_detect('PUBLIC WORKS', 'LIBRARY')) |>
+#arrange(desc(amount))
+
+#That also didn't work. So then I asked Claude... 
+#Why isn't this code working: cherry_picking_data_for_maximum_effect <- dept_totals |>
+# filter(str_detect('PUBLIC WORKS', 'LIBRARY')) |>
+# arrange(desc(amount))
+
+#Claude told me to fix three things...
+#First argument should be the column name (like department) - not in quotes
+#Use the | (OR) operator to find either "PUBLIC WORKS" or "LIBRARY"
+#Make sure you're using the correct column name from your dataframe
+
+#So that's how I got the above data.
