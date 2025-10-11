@@ -179,4 +179,10 @@ Some locations are recorded in multiple ways. '5018 PAINTERS MILL RD' (9 calls) 
 
 **Q4.  Write an answer to the following:** What's the best story idea or question you've seen as a result of the work you've done in this lab?
 
-A4. LOOK INTO 4540 Silver Spring Rd -- more research needed.
+A4. LOOK INTO 4540 Silver Spring Rd -- some shady stuff is going on ... was this a drug house/trap house? - 34 calls to one residential address is extremely unusual; may have been a location where drugs were being used or sold?
+
+Why did it take so long to address? - Calls started in May and continued through December. Why wasn't action taken sooner?
+
+Same-day, same-time duplicate calls - Multiple calls with identical timestamps but different case numbers suggest either multiple patients or multiple responders. Were people overdosing together?
+
+Pattern analysis - The clustering in August and December (holidays?) might be significant.
