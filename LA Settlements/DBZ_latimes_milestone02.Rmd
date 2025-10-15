@@ -4,6 +4,9 @@ author: "Zaka Hossain"
 date: "2025-10-11"
 output: html_document
 ---
+
+Work division: Bex wrote and ran the code for chosen paragraph #1; David wrote and ran the code for chosen paragraph #2; and Zaka reorganized, validated and consolidated the code. 
+
 #Analysis: Bex Heimbrock, Zaka Hossain, David Landerman
 
 L.A. is slammed with record costs for legal payouts:
@@ -39,7 +42,7 @@ knitr::opts_chunk$set(echo = TRUE)
 options(scipen=999)
 ```
 
-# I am Zaka and I am documenting my code -- I am trying to run and cross-verify both:(a) Bex's work to reproduce code for paragraph 1 and (b) David's work to reproduce code for paragraph 2, I am trying to keep their notes and comments intact as much as possible while orginizing for uniformity in structure for future use. Under Bex's work, all notes/comments are theirs unless otherwise mentioned and same goes for notes/comments under David's work. I, Zaka, may have changed names for certain datasets in the codes to maintain clarity. I am calling this notebook DBZ_latimes_milestone02 after initials of our first names.
+#Zaka: I am Zaka and I am documenting my code -- I am trying to run and cross-verify both:(a) Bex's work to reproduce code for paragraph 1 and (b) David's work to reproduce code for paragraph 2, I am trying to keep their notes and comments intact as much as possible while orginizing for uniformity in structure for future use. Under Bex's work, all notes/comments are theirs unless otherwise mentioned and same goes for notes/comments under David's work. I, Zaka, may have changed names for certain datasets in the codes to maintain clarity. I am calling this notebook DBZ_latimes_milestone02 after initials of our first names.
 
 ##loading libaries here
 
