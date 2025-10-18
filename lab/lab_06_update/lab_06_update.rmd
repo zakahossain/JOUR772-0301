@@ -250,11 +250,11 @@ Q2. Use the "combined_911" data. Write code to do the following:
 -- Show the total number of calls per county and month. 
 
 ```{r}
-combined_911_by_month <- combined_911 |>
-  mutate(month=month(date,label=TRUE)) |>
-  group_by(county, month)|>
-  summarise(total=n())
-arrange(desc(total))
+calls_by_county_month <- combined_911 |>
+  mutate(month = month(date, label = TRUE)) |>
+  group_by(county, month) |>
+  summarise(total_calls = n(), .groups = 'drop') |>
+  arrange(county, month)
 ```
 
 
@@ -262,18 +262,24 @@ Q2a: Are there any outliers or noteworthy results? Describe the general pattern 
 
 **Write answer here:**
 
+Yes, there is a pattern -- all three counties show a similar seasonal pattern with increased overdose calls during May - August, peaking in August. Cecil County had the highest single month with 55 calls in August. The most significant outlier is Allegany County's November w/ just 17 calls, almost 50% its typical monthly average. It also had a notably low January w/ 18 calls. 
+
 Q2b: Use "combined_911" data and write code to calculate the most calls per county and location. 
 
 ```{r}
+calls_by_county_location <- combined_911 |>
+  group_by(county, location) |>
+  summarise(total_calls = n(), .groups = 'drop') |>
+  arrange(desc(total_calls))
 
-
+head(calls_by_county_location, 10)
 ```
 
 Q2c: Which location had the most calls - where and what is that location?
 
 **Write answer here:**
 
-
+314 GROVE NECK RD EARLEVILLE, MD (Cecil County) had the most overdose calls in the combined three-county dataset. It is a drug and alcohol rehabilitation facility named 'Bracebridge Hal.' That makes sense.
 
 Q3. Now let's use the Baltimore City data, "baltimore_911_with_demographics." 
 
@@ -282,23 +288,49 @@ Write code to filter for calls in zip codes where the percentage of under 18 pop
 Next, show the zip code and population and how many calls occurred in each of those zip codes.
 
 ```{r}
+baltimore_911 <- read_csv("data/baltimore_911.csv") |> 
+  clean_names() |>
+  mutate(across(zip_code, as.character))
 
+# (already did this earlier, but doing it again here)
+maryland_zcta <- read_csv('data/maryland_zcta.csv') |>
+  mutate(across(ZCTA5N, as.character))
 
-
+baltimore_911_with_demographics <- baltimore_911 |>
+  left_join(maryland_zcta, by = c("zip_code" = "ZCTA5N"))
 ```
 
+#read up on left and right joins, i now understand how they work!
 
+```{r}
+high_youth_zips <- baltimore_911_with_demographics |>
+  mutate(pct_under_18 = (PLT18SP / POP100) * 100) |>
+  group_by(zip_code, POP100) |>
+  summarise(
+    total_calls = n(),
+    pct_under_18 = first(pct_under_18),
+    .groups = 'drop'
+  ) |>
+  rename(population = POP100) |>
+  arrange(desc(pct_under_18))
+
+high_youth_zips
+```
 Q3a: Where are those zip codes in the city?
 
 **Write the answer here:**
+There is no zip codes where the percentage of under 18 population is at least 75%
 
 Q4: Continuing with the baltimore_911_with_demographics data. Take the table you just created in Q3 and modify it.
 
 Add a column that calculates the number of calls per 1,000 people for those zip codes. To calculate a per capita rate, you might find this short guide handy: [https://observablehq.com/\@palewire/per-capita-calculator](https://observablehq.com/@palewire/per-capita-calculator){.uri}.
 
 ```{r}
+high_youth_zips_per_capita <- high_youth_zips |>
+  mutate(calls_per_1000 = (total_calls / population) * 1000) |>
+  arrange(desc(calls_per_1000))
 
-
+high_youth_zips_per_capita
 ```
 
 
@@ -307,3 +339,5 @@ Q4a: Which zip code has the highest rate of calls per 1,000 people? Find the nei
 Do an internet search: What are some of those neighborhoods, and what else can you tell me about the population there?
 
 **Write the answer here:**
+
+Zip code 21217 has the highest rate with 20.86 calls per 1,000 people. Neighborhoods include: Druid Heights, Central Baltimore --  these are historically working-class West Baltimore neighborhoods that are now predominantly African American with significant economic challenges. Hardships --> drug overdose.
