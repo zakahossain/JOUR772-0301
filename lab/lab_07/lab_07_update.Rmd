@@ -1,0 +1,164 @@
+---
+title: "lab_07"
+author: "Derek Willis/Rob Wells"
+date: "2025-10-21"
+output: html_document
+---
+
+
+Lab07 - API Keys and Tidycensus
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## You will need
+
+-   A Census API key
+
+## Load libraries and establish settings
+
+You'll need to load two packages for this: the tidyverse and tidycensus.
+
+**Task** load these two packages
+
+```{r}
+# Turn off scientific notation
+options(scipen=999)
+
+install.packages("tidycensus")
+
+# Load the tidyverse.
+library(tidyverse)
+library(tidycensus)
+```
+
+## Security and API keys
+
+You'll need your Census API Key. Here's how to do that securely:
+
+r_environ is a hidden file that can securely store API keys
+```{r}
+usethis::edit_r_environ()
+# a new text file opens in RStudio
+```
+
+1. Add your API keys in the r_environ file
+CENSUS_API_KEY=XXXXX
+OPENAI_API_KEY=XXXX
+etc....
+
+2. Save the r_environ() file and RESTART R
+
+# Hide your API Key from GitHub
+
+```{r}
+# Check if .gitignore exists in your project
+file.exists(".gitignore")
+```
+
+Assuming you don't have a .gitignore file, then create one
+1. RStudio:
+- File → New File → Text File
+
+2. ## Add These Lines to Your `.gitignore`
+# R files
+.Rhistory
+.RData
+.Rproj.user/
+.Renviron
+.Rprofile
+
+# Environment files
+.env
+*.env
+
+# API keys and secrets
+*secret*
+*password*
+*api_key*
+
+3. save the file a .gitignore in the root directory of your project
+yes, you have to precede the file with a dot: .gitignore
+
+4. Veryify it is working
+
+```{r}
+system("git status")
+```
+
+
+## Setup Census API
+
+You'll need your Census API Key:
+
+**Task** set your API Key if you haven't already. You won't need to install or overwrite it.
+
+```{r echo=FALSE}
+census_api_key("CENSUS_API_KEY")
+```
+
+## Load and view ACS variables
+
+You'll also need to load the list of American Community Survey variables from the 2023 5-year estimates so you can identify the codes you need:
+
+**Task** load the variables from the 2023 5-year ACS (which is called "acs5") and save them to a dataframe
+
+```{r}
+sf3 <- load_variables(2000, "sf3", cache = TRUE)
+```
+
+## Answer questions
+
+**Q1** What is the Maryland jurisdiction with the lowest median age, according to the ACS 2023 5-year estimates? Hint: look at the variables for ACS in 2023 and find the variable for median age. **A1**
+
+```{r}
+```
+
+**Q2** Which Maryland counties have a median age of at least 50? You can use the dataframe created in Q1 to answer this, but you must write code to display only those counties with a median age of at least 50. **A2**
+
+```{r}
+```
+
+**Q3** We're interested in knowing more about Montgomery County zip codes where overdose calls are coming from and the demographic characteristics they possess. In particular, we want to calculate a rate of calls per 1,000 population. To do this, you'll need to:
+
+1.  Load the Montgomery County 911 overdose calls data.
+```{r}
+
+```
+
+2.  Create a new dataframe with the total number of calls for each zip code.
+```{r}
+
+```
+
+3.  Find the ACS variable pertaining to the total 18 and up population (there are several choices here; you want the simplest one). Then get from the ACS data from all Maryland zip codes using that variable - you will need to specify an earlier year to get the data.
+```{r}
+
+```
+
+4.  Join the ACS data to the Montgomery County zip code totals dataframe and rename the estimate column to a meaningful name you've given the ACS variable.
+```{r}
+
+```
+
+5.  Add a column to the joined dataframe that calculates a rate of calls per 1,000 population.
+```{r}
+
+```
+
+
+Which zip code has the highest rate of calls? Which has the lowest?
+
+**A3**
+
+```{r}
+```
+
+**Q4** Using [CensusReporter.org](https://censusreporter.org/), examine the zip codes with the highest and lowest rates and compare and contrast their demographic profiles. Is there a story here?
+
+**A4**
+
+**Write your answer here:**
+

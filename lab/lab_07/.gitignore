@@ -1,0 +1,15 @@
+# R files
+.Rhistory
+.RData
+.Rproj.user/
+.Renviron
+.Rprofile
+
+# Environment files
+.env
+*.env
+
+# API keys and secrets
+*secret*
+*password*
+*api_key*

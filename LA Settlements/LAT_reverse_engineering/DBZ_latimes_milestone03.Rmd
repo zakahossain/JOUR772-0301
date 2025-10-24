@@ -1,0 +1,301 @@
+---SUBMISSION 3
+title: "DBZ_latimes"
+author: "Zaka Hossain, David Landerman, Bex Heimbrock"
+date: "2025-10-11"
+output: html_document
+---
+
+Work division: David wrote the code to pull and clean the data, Bex wrote and ran the code for chosen paragraph #1; David wrote and ran the code for chosen paragraph #2; and Zaka reorganized, validated and consolidated the code, afterwards Bex and David went through to check their respective sections. 
+
+#Analysis: Bex Heimbrock, Zaka Hossain, David Landerman
+
+#Note to RW: As this is still a draft, we will note questions to you in this format
+
+L.A. is slammed with record costs for legal payouts:
+https://www.latimes.com/local/lanow/la-me-ln-city-payouts-20180627-story.html
+By Emily Alpert Reyes and Ben Welsh
+GitHub repo for story with data:
+https://github.com/datadesk/la-settlements-analysis
+
+##Paragraphs Chosen (not in order of importance):
+
+1. Last budget year, the city paid out more than $200 million in legal settlements and court judgments — a record amount that was more than the city spent on its libraries or fixing its streets.
+
+2. Beyond the mammoth cases, a pileup of other large payouts has padded the tab, a Times analysis of city payouts found. While the total number of payouts has dipped over time, the average amount has increased. Last budget year, the city paid out 30 settlements of $1 million or more — five times as many as a decade before.
+3. Thousands of legal battles involving the Los Angeles Police Department, including a rash of recent settlements over police shootings and wrongful imprisonment, have added up to more than 40% of the total — a higher sum than any other city department, the analysis showed. That includes more than $24 million paid to two men who were freed after decades in prison, along with lawsuits over arrests, injuries, car crashes and alleged retaliation and discrimination against its own employees.
+4. Legal payouts for this budget year are estimated to total around $109 million. Although the city is spending less on payouts this year than last, it also has been saddling future budgets with payout costs, committing up to $16 million next budget year to help pay off settlements that it already has approved.
+5. “Both Feuer and Garcetti stressed that the surge is tied to a few cases with extraordinarily large payouts: Last budget year, a class-action lawsuit over a telephone tax cost the city $45 million. In another case, more than $23 million went to the family of a motorcyclist killed at a San Pedro intersection. And the city spent an additional $21 million last budget year in a case alleging that L.A. failed to make sure enough publicly funded housing was accessible to people with disabilities.”
+ 
+##Rationale
+
+What Makes These 5 data driven and important:
+
+1. It is a clear nut graph and is about the broad point of total money paid out from court settlements. By comparing payout figures to expenditure on libraries and “fixing its streets,” it provides context for readers – a much needed anchor point.
+
+2. “Time’s analysis of city payouts found” is a dead giveaway for data driven paragraphs. It talks about the totals by year as well as the average by year. The paragraph talks not only about a fall in the quantity of settlements but also the rise in the value of each of the settlements as a reason for overall increase in the total value. Up top, it also makes it clear that these figures do not include outliers mentioned in the previous paragraph(s).  
+
+3. “Thousands of legal battles” and talking about 40% of the total payouts are data driven statements. It also compared the total dollar amount for police settlements vs settlements resulting from other departments. Highlighting the percentage share, it identifies LAPD as the department using up a major chunk of the payouts share. 
+
+4. This is important because it talks about the fiscal reality of payouts paid in installments. And gives us an idea about the downward trend, and estimation determined from that.
+
+5. This paragraph talks about outliers in the data taking up the lionshare of the massive number presented in the nut graph.
+
+##Why these paragraphs were more important than other data driven paragraphs:
+Other paragraphs compared the city’s settlement numbers to that of other cities as well as an increase in bicycle crash payments.These are important statistical comparisons, especially the one which put Los Angeles in the context of other cities, however they were not the main focus of the story and were therefore de-prioritized. Another shorter paragraph gave the high level statistic in the nut graph slightly more definition. Though important, this paragraph was not in the top 5 due to its repetitive nature. In general, the chosen paragraphs demonstrate clear, original reporting based on data pulled from records requests and other sources. 
+
+#Zaka comment: The sections of Bex and David's work have been slightly reformatted and edited for consistency
+
+#START David's work: Pulling/cleaning data
+
+##Note to RW: are we supposed to understand in general what the following code chunk means or why it's important? I just copy and paste from the labs.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen=999)
+```
+
+##loading libaries here
+```{r}
+library(tidyverse)
+library(rio)
+library(lubridate)
+library(janitor)
+```
+
+# Loading Data
+```{r}
+#import data function
+payouts <- rio::import('payouts.xlsx', 
+                       skip=1, header=TRUE)
+#The above skip/header functions deletes the wonky top row, make the second row into headers
+
+
+payouts <- payouts %>% 
+  slice_head(n=18701) %>% 
+  clean_names()
+#the bottom two rows in the csv are one blank row and then a row with a grand total, this will screw up the data. Slice_head means filtering by that number of rows, I tried to use slice_tail(n=2) but it gave me JUST the bottom two rows, so I did total rows minus 2 and slice_head.
+##Note to RW if you have a suggestion on a more succinct/elegant way to achieve the above function please let us know
+
+#Import function for department totals which was brought into DAVIDS section from BEX's code to load department totals from comparison was deleted because it was from the output folder rather than the input folder.
+```
+
+#END David's work: Pulling/cleaning data (Started line 48)
+
+#START Bex's Work: Paragraph 1 Reverse Engineering
+
+##Paragraph 1: Total Payouts vs City Spending 
+
+**Target Text:** "Last budget year, the city paid out more than $200 million in legal settlements and court judgments(Finding 1.1) — a record amount that was more than the city spent on its libraries or fixing its streets(Finding 1.2)."
+
+## Calculate yearly totals
+**Finding 1.1** : The 2017 fiscal year had total payouts of $201,372,336. 
+```{r}
+yearly_data_sum <- payouts %>% 
+  group_by(fiscal_year) %>%
+  summarise(
+    total_cases = n(),
+    total_amount = sum(amount, na.rm = TRUE)
+  ) %>% 
+  arrange(fiscal_year)
+
+# Check 2017 total (last budget year when article was published in 2018)
+yearly_data_sum %>% 
+  filter(fiscal_year == 2017)
+```
+
+So, the total for 2018 is $72,829,597... that doesn't seem right. LA Times says the city paid out $200million! But, the total for 2017 is over $201million. This article was published in 2018. So, last budget year was, in fact, 2017. Yay!
+
+Now it's time to read in the csv file containing totals spent on public works.
+
+## Compare to library and public works spending
+
+**Zaka's Note**: The LA Times article states settlements exceeded what the city spent on "fixing its streets" ("last year" in 2017), this may refer to a specific portion of the Public Works budget, *perhaps the Bureau of Street Services* rather than the entire department budget. Street repair/maintenance is likely a subset of the Bureau of Street Services budget. The totals are listed in the paragraph below.
+
+**Finding 1.2** #written by David, but the numbers were found by Bex
+According to https://openbudget.lacity.org/#!/year/2017/operating/0/department_name
+The LA Times Github does not have the relevant information in their github to make these claims. What they have is payouts from civil liability claims in their input folder. In their output folder they do have a "department totals" csv but we believe that is a pivot table of the payouts themselves, rather than the department budgets from the year in question, 2017.
+The relevant budget totals, pulled directly, not calculated by us: 
+
+2017 City of Los Angeles Department Budgets
+Library: $157,909,299
+Fixing Streets: $181,569,603 (Bureau of Street Services, this may not be the relevant dept) 
+
+Conclusion the $201,372,336 the city spent on civil liability payments was more than the totals from those two budget categories.
+
+#END Bex's Work: Paragraph 1 Reverse Engineering (Started Line 97)
+
+#David's Work: Paragraph 2 Reverse Engineering
+
+##Paragraph 2: Payout Trends Analysis
+
+**Target Text:** "Beyond the mammoth cases, a pileup of other large payouts has padded the tab, a Times analysis of city payouts found. While the total number of payouts has dipped over time, the average amount has increased. Last budget year, the city paid out 30 settlements of $1 million or more — five times as many as a decade before."
+
+## Create comprehensive summary table
+```{r}
+yearly_data_sum <- payouts %>% 
+  group_by(fiscal_year) %>%
+  summarise(
+    total_cases = n(),
+    total_amount = sum(amount, na.rm = TRUE),
+    average_payout = mean(amount, na.rm=TRUE),
+     #then filter the rows in the source table to rows with the amount column has a value over 1 million then count how many rows each fiscal_year value has that meet that condition for a column in the pivot table 
+    number_of_cases_over_one_million = sum(amount >= 1000000, na.rm=TRUE)
+  ) %>% 
+  arrange(fiscal_year)
+#variables in this section changed to match dataframe names established by Bex
+
+```
+
+## Finding 2.1: Total number of payouts has dipped over time
+```{r}
+yearly_data_sum %>%
+  mutate(
+    pct_change_from_baseline = ((total_cases - first(total_cases))/
+                   first(total_cases)) * 100,
+    difference_from_baseline = total_cases - first(total_cases)
+  ) %>%
+  select(fiscal_year, total_cases, difference_from_baseline, pct_change_from_baseline)
+#NOTE TO RW: trends difference from article suggest missing data cleaning step, search "DATA CLEANING INVESTIGATION" in this code for what I'd like your thoughts on
+#NOTE TO RW: Is the difference from baseline and pct change from baseline helpful? Or would you recommend changing it to year to year difference/pct change?
+```
+**Zaka's Note**: The output agrees with the proposed statement above, if the period is taken from 2013 to 2018 with a minor exception in 2017.
+
+## Finding 2.2: Average amount has increased
+
+```{r}
+yearly_data_sum %>%
+  mutate(
+    pct_change_from_baseline = ((average_payout - first(average_payout))/first(average_payout)) * 100,
+    difference_from_baseline = average_payout - first(average_payout)
+  ) %>%
+  select(fiscal_year, average_payout, difference_from_baseline, pct_change_from_baseline)
+```
+**Zaka's Note**: The output agrees with the proposed statement above, if the period is taken from 2013 to 2017.
+
+## Finding 2.3: 30 settlements of $1 million or more in 2017
+
+```{r}
+yearly_data_sum %>%
+  filter(fiscal_year == 2017) %>%
+  select(fiscal_year, number_of_cases_over_one_million)
+```
+**Zaka's Note**: The output agrees with the proposed statement above. 30 cases over 1M.
+
+## Finding 2.4: Five times as many as a decade before
+
+```{r}
+yearly_data_sum %>%
+  filter(fiscal_year == 2007 | fiscal_year == 2017) %>%
+  mutate(decade_change_multiplier = number_of_cases_over_one_million/
+           first(number_of_cases_over_one_million)) %>%
+  select(fiscal_year, number_of_cases_over_one_million, decade_change_multiplier)
+#NOTE TO RW: For clarity's sake should I remove the "Decade cahnge multiplier" because maybe it implies that 2007 was the same as 1997. And instead just do a math operation outside the dataframe.
+#Note to RW, you said you didn't understand the Decade Change Multiplier. Its just saying there were 5 times as many cases in 2017 than there were 10 years before. 30/6=5, thats all.
+```
+**Zaka's Note**: The output agrees with the proposed statement above. Personally would've eyeballed it but David's dedicated to coding it out. I am glad he is on my team.
+
+##More from David
+
+DATA CLEANING INVESTIGATION: I noticed the paragraph said "cases dipped over time" but I didn't see that in the data so I looked to make sure I didn't miss a data cleaning step. I went to amounts and sorted by amount to see if I had any NA rows. However I found some large negative values. I first wondered if these were mislabled and I should apply some kind of absolute value filter (all negatives multiply by -1), but then I looked up the case numbers and saw there were duplicates, so these were amounts returned to the city. Then I saw some cases had 3 lines like one that had a 15million, a negative 15million, then another positive 15million. Thought that might make the data wonky, counting one case as three. Think I may have to filter out one negative payment and its corresponding positive payment if they cancel each other out. Better yet, a net amount on each case number. I wonder how I could do that without accidentally combinign casenumber with values of NA from different years.
+
+#END David's Work: Paragraph 2 Reverse Engineering (Started Line 171)
+
+#Zaka's Work: Paragraph 3 Reverse Engineering
+
+##Paragraph 2: $24 million wrongful imprisonment cases
+
+**Target Text:** "Thousands of legal battles involving the Los Angeles Police Department (Finding 3.3), including a rash of recent settlements over police shootings and wrongful imprisonment, have added up to more than 40% of the total(Finding 3.1) — a higher sum than any other city department (Finding 3.2), the analysis showed. That includes more than $24 million paid to two men (Finding 3.4) who were freed after decades in prison, along with lawsuits over arrests, injuries, car crashes and alleged retaliation and discrimination against its own employees."
+
+*findings are organized not by sequence in the target text but by the order in which we calculated them*
+
+```{r}
+lapd_cases <- payouts |>
+  filter(str_detect(department, 'Police'))
+lapd_cases |>
+  arrange(desc(amount))
+```
+
+### Finding 3.1: Calculate LAPD's share of total payouts
+
+```{r paragraph3-lapd-percentage}
+
+department_totals <- payouts |>
+  group_by(department) |>
+  summarise(
+    total_cases = n(),
+    total_amount = sum(amount, na.rm = TRUE)
+  ) |>
+  arrange(desc(total_amount))
+
+department_totals
+
+# Geting total for all departments
+overall_total <- sum(payouts$amount, na.rm = TRUE)
+
+# Calculating LAPD totals and percentage
+lapd_summary <- department_totals |>
+  filter(str_detect(department, 'Police')) |>
+  summarise(
+    total_lapd_cases = sum(total_cases),
+    total_lapd_amount = sum(total_amount),
+    percentage_of_total = (sum(total_amount) / overall_total) * 100
+  )
+
+lapd_summary
+```
+
+**Zaka's Note:** The output confirms LAPD accounts for more than 40% of total payouts.
+
+### Finding 3.2: "Higher sum than any other city department"
+
+```{r}
+# Show top 10 departments by payout amount
+department_totals |>
+  mutate(percentage_of_total = (total_amount / overall_total) * 100) |>
+  arrange(desc(total_amount))
+```
+
+**Zaka's Note:** LAPD is the #1 department by total payout amount.
+
+### Finding 3.3: "Thousands of legal battles"
+
+```{r}
+# total LAPD cases by year
+lapd_cases |>
+  group_by(fiscal_year) |>
+  summarise(
+    cases = n(),
+    total_amount = sum(amount, na.rm = TRUE)
+  ) |>
+  arrange(fiscal_year)
+
+#David Note: separately, pulling total cases from department totals, calculated in finding 3.1 code chunk
+department_totals %>% 
+  filter(department=="Police Department")
+```
+
+**Zaka's Note:** The data confirms thousands of LAPD-related legal battles over the years covered.
+
+### Finding 3.4: Look for the $24 million wrongful imprisonment cases
+
+```{r}
+false_imprisonment_cases <- lapd_cases %>%
+  filter(str_detect(case_type, 'False Arrest/Detention/Imprisonment')) |>
+  arrange(desc(amount))
+```
+
+
+**Zaka's Note:** The article mentions "$24 million paid to two men who were freed after decades in prison." Among the top three false arrest/detention/imprisonment cases in the data are:
+
+a) REGISTER, KASH (CV14-04568, fiscal year 2016, $16,700,000)
+b) LISKER, BRUCE (CV09-09374, fiscal year 2016, $7,600,000)
+
+https://www.latimes.com/local/lanow/la-me-ln-wrongful-convictions-20160119-story.html
+https://laist.com/news/kpcc-archive/los-angeles-agrees-to-pay-24-million-to-2-men-wron
+https://abc7.com/post/2-wrongfully-convicted-men-to-receive-$24m-after-la-city-council-vote/1165973/
+
+Combined total: 24,300,000 USD - matching the article's figure. Both settlements were approved by LA City Council in January 2016.
+Note: The second-largest case in the data, ANTHONY III, OBIE S ($8,300,000, fiscal year 2015), also appears but specific details about this wrongful imprisonment case were not found in available sources.
+
+
+
