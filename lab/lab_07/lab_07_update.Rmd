@@ -96,7 +96,7 @@ You'll need your Census API Key:
 **Task** set your API Key if you haven't already. You won't need to install or overwrite it.
 
 ```{r echo=FALSE}
-census_api_key("CENSUS_API_KEY")
+#census_api_key("CENSUS_API_KEY")
 ```
 
 ## Load and view ACS variables
@@ -111,49 +111,87 @@ sf3 <- load_variables(2000, "sf3", cache = TRUE)
 
 ## Answer questions
 
-**Q1** What is the Maryland jurisdiction with the lowest median age, according to the ACS 2023 5-year estimates? Hint: look at the variables for ACS in 2023 and find the variable for median age. **A1**
+**Q1** What is the Maryland jurisdiction with the lowest median age, according to the ACS 2023 5-year estimates? Hint: look at the variables for ACS in 2023 and find the variable for median age. 
+**A1** Baltimore city, Maryland
 
 ```{r}
+#ACS 2023 5-year variables
+acs_vars <- load_variables(2023, "acs5", cache = TRUE)
+
+# The variable for median age is B01002_001
+md_median_age <- get_acs(
+  geography = "county",
+  variables = "B01002_001",
+  state = "MD",
+  year = 2023
+)
 ```
 
-**Q2** Which Maryland counties have a median age of at least 50? You can use the dataframe created in Q1 to answer this, but you must write code to display only those counties with a median age of at least 50. **A2**
+
+
+**Q2** Which Maryland counties have a median age of at least 50? You can use the dataframe created in Q1 to answer this, but you must write code to display only those counties with a median age of at least 50. **A2** Eyeballed in the previous answer: 2 Maryland counties have a median age of at least 50:Talbot County - 51.1 years; Worcester County - 50.7 years. Ran code to get the same result.
 
 ```{r}
+md_median_age |>
+  filter(estimate >= 50) |>
+  arrange(desc(estimate))
 ```
 
 **Q3** We're interested in knowing more about Montgomery County zip codes where overdose calls are coming from and the demographic characteristics they possess. In particular, we want to calculate a rate of calls per 1,000 population. To do this, you'll need to:
 
 1.  Load the Montgomery County 911 overdose calls data.
 ```{r}
-
+moco_911 <- read_csv("data/montgomery_2022_overdoses.csv")
 ```
 
 2.  Create a new dataframe with the total number of calls for each zip code.
 ```{r}
-
+calls_by_zip <- moco_911 |>
+  group_by(zip) |>
+  summarise(total_calls = n()) |>
+  mutate(zip = as.character(zip))
 ```
 
 3.  Find the ACS variable pertaining to the total 18 and up population (there are several choices here; you want the simplest one). Then get from the ACS data from all Maryland zip codes using that variable - you will need to specify an earlier year to get the data.
 ```{r}
+all_zip_pop <- get_acs(
+  geography = "zcta",
+  variables = "B09021_001",
+  year = 2022
+)
 
+all_zip_pop <- all_zip_pop |>
+  mutate(zip = str_remove(NAME, "ZCTA5 "))
+
+md_zip_pop <- all_zip_pop |>
+  filter(str_starts(zip, "20") | str_starts(zip, "21"))
 ```
 
 4.  Join the ACS data to the Montgomery County zip code totals dataframe and rename the estimate column to a meaningful name you've given the ACS variable.
 ```{r}
-
+joined_data <- calls_by_zip |>
+  left_join(md_zip_pop, by = "zip") |>
+  rename(pop_18_plus = estimate)
 ```
 
 5.  Add a column to the joined dataframe that calculates a rate of calls per 1,000 population.
 ```{r}
-
+joined_data <- joined_data |>
+  mutate(rate_per_1000 = (total_calls / pop_18_plus) * 1000) |>
+  arrange(desc(rate_per_1000))
 ```
 
 
 Which zip code has the highest rate of calls? Which has the lowest?
 
 **A3**
+ZIP 20877 -- Gaithersburg, has the highest reliable rate at 1.73 calls per 1,000 population (50 calls, 28,979 adults)
+ZIP 20707 -- Laurel, has the lowest rate at 0.036 calls per 1,000 population (1 call, 27,927 adults)
+
+#Note: ZIP 20889 technically has the highest rate (111.11 per 1,000), but with only 9 adults in the population and 1 call, this is statistically unreliable and likely is a data error.
 
 ```{r}
+
 ```
 
 **Q4** Using [CensusReporter.org](https://censusreporter.org/), examine the zip codes with the highest and lowest rates and compare and contrast their demographic profiles. Is there a story here?
@@ -162,3 +200,4 @@ Which zip code has the highest rate of calls? Which has the lowest?
 
 **Write your answer here:**
 
+Gaithersburg has 48x higher overdose call rate. It has lower median income ($18K less), higher poverty (1.5x), lower education levels and more renter housing. The higher rental rate (56% vs 45%) may mean more moving populations and less stability. Laurel most likely is more established, stable community - higher home ownership, better educational attainment and higher household income. These may provide protective factors against substance abuse crises requiring emergency calls. Economic stress and housing instability in Gaithersburg may contribute to higher overdose rates.
