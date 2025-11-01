@@ -1,0 +1,220 @@
+---
+title: "lab_08_update"
+author: "Derek Willis/Rob Wells"
+date: "2025-10-27"
+output: html_document
+---
+
+**YOUR NAME HERE:Zaka Hossain***
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load libraries and establish settings
+
+**Task** Create a codeblock and load appropriate packages and settings for this lab. We'll be making some charts, working with dates and retrieving Census data.
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(tidycensus)
+```
+
+## Load and modify data
+
+**Task** Create a codeblock and load the following data from the data folder:
+
+-   Prince George's County 911 Overdose Calls
+
+```{r}
+pg_overdoses <- read_csv("data/prince_georges_2022_overdoses.csv")
+```
+
+You will need to create columns for the date, week and month based on the existing `datetime` column.
+
+```{r}
+pg_overdoses <- pg_overdoses |>
+  mutate(
+    date = date(datetime),
+    week = week(datetime),
+    month = month(datetime, label = TRUE)
+  )
+```
+
+
+## Questions
+
+**Q1.** Which month saw the greatest percentage of total calls? Create a dataframe that calculates the percentage of all calls that each month's calls represents. Make a bar chart from that dataframe. Your bar chart must have:
+
+-   A clear title that states the main idea/finding
+-   Good labels for the x & y axis and a caption for the source, which is Prince George's County EMS.
+-   Readable bars - the values shouldn't be overlapping
+
+
+**A1.**
+
+```{r}
+pg_calls_by_month_pct <- pg_overdoses |>
+  group_by(month) |>
+  summarize(total_calls = n()) |>
+  mutate(
+    percentage = (total_calls / sum(total_calls)) * 100
+  ) |>
+  arrange(desc(percentage))
+```
+
+```{r}
+library(ggthemes)
+```
+
+
+```{r}
+pg_calls_by_month_pct |>
+  ggplot() +
+  geom_bar(aes(x = reorder(month, percentage), weight = percentage)) +
+  coord_flip() +
+  labs(
+    title = "December had the highest percentage of overdose calls",
+    subtitle = "Prince George's County, 2022",
+    x = "Month",
+    y = "Percentage of Total Calls (%)",
+    caption = "Source: Prince George's County EMS"
+  ) +
+  theme_solarized_2()
+```
+
+**A1-written answer: Which month saw the greatest percentage of total calls? Write that here:**
+
+December saw the greatest percentage of total calls at 10.093057%
+
+**Q2.** Let's visualize this data on a weekly basis using a line chart. As in Q1, generate a dataframe with the total number of calls for each week, and then create a line chart to show the distribution of calls over time. Your line chart must have:
+
+-   A clear title that states the main idea/finding
+-   Good labels for the x & y axis and a caption for the source, which is Prince George's County EMS.
+-   Readable labels
+
+
+**A2.**
+
+```{r}
+pg_calls_by_week <- pg_overdoses |>
+  group_by(week) |>
+  summarize(total_calls = n())
+```
+
+
+```{r}
+pg_calls_by_week |>
+  ggplot() +
+  geom_line(aes(x = week, y = total_calls), color = "hotpink", size = 1) +
+  labs(
+    title = "Weekly overdose calls show seasonal patterns",
+    subtitle = "Prince George's County, 2022",
+    x = "Week of Year",
+    y = "Total Calls",
+    caption = "Source: Prince George's County EMS"
+  ) +
+  scale_x_continuous(breaks = seq(0, 52, by = 4)) +
+  theme_clean() 
+```
+
+
+**A2--written answer:Describe the pattern of results; you may want to look at the data to dig into particular outliers.Write that here:**
+
+Week 28 (which is in July) is the highest peak and an outlier comapared to neigbouring weeks. There is a crash in week 53 which may seem odd, especially considering New Years -- but, it only has 3 days. Also the month of January is surprinsingly low.
+
+**Q3.** A scatterplot is a type of chart that helps us see relationships between two variables. One variable goes on the x axis, the other on the y axis. For each row/observation in our data, a scatterplot puts a circle (or a "point") where the two variables intersect on a grid.
+
+Statisticians use scatterplots to show graphically whether one variable is correlated -- related, in a statistical sense -- with another variable. A classic example is the [relationship between ice cream sales and temperature](https://www.mathsisfun.com/data/scatter-xy-plots.html). The scatterplot below -- press play to load the image -- shows that relationship, that an increase in temperature is associated with an increase in ice cream sales. When it's 12C, sales are 200 dollars, and when it's hotter, 25C, sales are 600 dollars.
+
+```{r}
+knitr::include_graphics("https://www.mathsisfun.com/data/images/scatter-ice-cream1.svg")
+```
+
+We're going to use a scatterplot a little differently, to get a visual sense of two key variables:
+
+Our question is: does the median income in a zip code have any relationship to the number of overdose 911 calls in that zip code?
+# (I like this question.)
+To answer this question, do the following:
+
+**Q3 - 1.**  Generate a dataframe with the number of 911 calls for each zip code.
+```{r}
+pg_calls_by_zip <- pg_overdoses |>
+  group_by(zipcode) |>
+  summarize(total_calls = n())
+```
+
+**Q3 -2.**  Get data from the Census Bureau showing median household income for Maryland zip codes.
+
+```{r echo=FALSE}
+#census_api_key("CENSUS_API_KEY")
+```
+
+```{r}
+sf3 <- load_variables(2000, "sf3", cache = TRUE)
+```
+
+```{r}
+md_income <- get_acs(
+  geography = "zcta",
+  variables = "B19013_001",
+  year = 2022
+)
+```
+
+```{r}
+md_income <- md_income |>
+  rename(zipcode = GEOID, median_income = estimate) |>
+  select(zipcode, median_income)
+```
+
+
+**Q3 -3.**  Join those two dataframes on their zip code columns, starting with the 911 calls dataframe.
+```{r}
+pg_income_calls <- pg_calls_by_zip |>
+  left_join(md_income, by = "zipcode")
+```
+
+**Q3 -4.**  Make a scatterplot showing the total calls and median income. I didn't show you how to do this, so look it up! Googling "ggplot scatterplot" is a good start. Give it an appropriate title, source, and x and y axis titles. 
+```{r}
+# Create scatterplot
+pg_income_calls |>
+  ggplot(aes(x = median_income, y = total_calls)) +
+  geom_point(alpha = 0.7, size = 2, color = "blue") +
+  geom_smooth(method = "lm", se = FALSE, color = "hotpink", linetype = "solid") +
+  labs(
+    title = "Lower-income zip codes tend to have more overdose calls",
+    subtitle = "Prince George's County, 2022",
+    x = "Median Household Income ($)",
+    y = "Total 911 Overdose Calls",
+    caption = "Source: Prince George's County EMS and U.S. Census Bureau (ACS 2022)"
+  ) +
+  theme_solarized_2()
+```
+
+**Bonus question:** Take the scatterplot above and add a label for each point that shows the zip code using geom_text() - see some examples of its use at <https://ggplot2.tidyverse.org/reference/geom_text.html#ref-examples>. Try to make the names as easy to read as possible by avoiding overlap.
+
+```{r}
+
+
+```
+
+
+**Q4**.  In the answer space below, describe what you see and answer the questions posed above. In a general sense, what do you think this means? Feel free to consider the actual raw values: how would you report out the main point(s) of this chart?
+
+**A4: Write your answer below.**
+The scatterplot reveals a negative correlation between median household income and overdose calls in PG County. (Note:correlation does not imply causation.) Zip codes with lower median incomes generally experience more overdose-related emergency calls, while wealthier zip codes tend to have fewer calls.
+
+Key findings for reporting:
+
+1. The data shows that as median income decreases, the number of overdose calls tends to increase. The trend line illustrates this inverse relationship clearly.
+
+
+2. The pattern suggests that overdose prevention and treatment resources may need to be concentrated in lower-income communities and enhanced addiction treatment services in economically disadvantaged neighborhoods.
+
+3.The main story here is about health equity and how economic disadvantage correlates with overdose risk. Further reporting could explore the underlying causes: Is it access to treatment? Quality of healthcare? Availability of prescription drugs? Economic stress as a risk factor? Community resources and support systems?
+
+This analysis provides a data-driven foundation for investigating the social and economic factors contributing to the overdose crisis in Prince George's County.
+
