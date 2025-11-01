@@ -209,12 +209,9 @@ The scatterplot reveals a negative correlation between median household income a
 
 Key findings for reporting:
 
-1. The data shows that as median income decreases, the number of overdose calls tends to increase. The trend line illustrates this inverse relationship clearly.
-
+1. The data shows that as median income decreases, the number of overdose calls tends to increase. 
 
 2. The pattern suggests that overdose prevention and treatment resources may need to be concentrated in lower-income communities and enhanced addiction treatment services in economically disadvantaged neighborhoods.
 
 3.The main story here is about health equity and how economic disadvantage correlates with overdose risk. Further reporting could explore the underlying causes: Is it access to treatment? Quality of healthcare? Availability of prescription drugs? Economic stress as a risk factor? Community resources and support systems?
-
-This analysis provides a data-driven foundation for investigating the social and economic factors contributing to the overdose crisis in Prince George's County.
 
