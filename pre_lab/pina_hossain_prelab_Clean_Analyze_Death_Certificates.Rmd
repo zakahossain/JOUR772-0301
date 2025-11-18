@@ -1,0 +1,344 @@
+---
+title: "Prelab_demo_Clean_Analyze_Death_Certificates"
+author: "Wells"
+date: "2025-11-17"
+output: html_document
+---
+
+Group 2:Sophie and Zaka
+
+
+This exercise will involve cleaning, tabulating and mapping the death certificate data from Cheltenham and Jessup
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+install.packages("htmlwidgets")
+install.packages("leaflet")
+#install.packages("sf")
+install.packages("googlesheets4")
+library(tidyverse)
+library(rio)
+library(janitor)
+library(htmlwidgets)
+library(leaflet)
+library(sf)
+library(googlesheets4)
+library(tidycensus)
+```
+
+### Import Extracted Death Certificate Data
+```{r}
+
+gs4_deauth()  
+dc <- read_sheet("https://docs.google.com/spreadsheets/d/13CthhhfLHiPZqr1P67SCa9BVUyb5Rl6OBhUwvqawDEk/edit?usp=sharing", sheet = "responses_copy") |> 
+    select(-Duplicates) |> 
+  clean_names()
+
+
+```
+
+
+
+## Mapping place of origin
+
+```{r}
+
+dc |> 
+  mutate(origin = birth_place_city_or_town_and_state_write_it_as_bowie_md) |> 
+  count(origin) |> 
+  arrange(desc(n))
+
+
+```
+
+### Massive clean origin codeblock
+```{r}
+
+dc <- dc |> 
+  mutate(origin = str_squish(birth_place_city_or_town_and_state_write_it_as_bowie_md)) |> 
+  mutate(county_origin = case_when(
+         str_detect(origin, "(?i)^md\\.?$") ~ "Maryland", 
+         str_detect(origin, "(?i)baltimore county") ~ "Baltimore County",  # Check this FIRST
+         str_detect(origin, "(?i)baltimore") ~ "Baltimore city",
+          is.na(origin) ~ "Unknown",
+               TRUE ~ origin
+         )) |> 
+      mutate(county_origin = str_remove_all(county_origin, ", Md.")) 
+```
+
+```{r}
+dc <- dc |> 
+  mutate(origin = str_squish(birth_place_city_or_town_and_state_write_it_as_bowie_md)) |> 
+  mutate(county_origin = case_when(
+         # Handle various forms of unknown/missing data
+         str_detect(origin, "(?i)^(unknown|n/a|na|not known|illegible)") ~ "Unknown",
+         is.na(origin) ~ "Unknown",
+         
+         # Baltimore (check Baltimore County BEFORE Baltimore city)
+         str_detect(origin, "(?i)baltimore county") ~ "Baltimore County",  
+         str_detect(origin, "(?i)baltimore") ~ "Baltimore city",
+         
+         # Counties explicitly mentioned
+         str_detect(origin, "(?i)prince george") ~ "Prince George's County",
+         str_detect(origin, "(?i)anne arr") ~ "Anne Arundel County",  # Catches misspelling
+         str_detect(origin, "(?i)harford county") ~ "Harford County",
+         str_detect(origin, "(?i)st\\.? mary") ~ "St. Mary's County",
+         
+         # Queen Anne's County cities
+         str_detect(origin, "(?i)^easton") ~ "Queen Anne's County",
+         str_detect(origin, "(?i)centreville") ~ "Queen Anne's County",
+         str_detect(origin, "(?i)church hill") ~ "Queen Anne's County",
+         
+         # Prince George's County cities
+         str_detect(origin, "(?i)cheltenham") ~ "Prince George's County",
+         str_detect(origin, "(?i)seat pleasant") ~ "Prince George's County",
+         
+         # Frederick County
+         str_detect(origin, "(?i)frederick") ~ "Frederick County",
+         
+         # Howard County
+         str_detect(origin, "(?i)ellicott city") ~ "Howard County",
+         str_detect(origin, "(?i)jessup") ~ "Howard County",
+         
+         # Calvert County
+         str_detect(origin, "(?i)dunkirk") ~ "Calvert County",
+         
+         # Cecil County
+         str_detect(origin, "(?i)elkton") ~ "Cecil County",
+         
+         # Wicomico County
+         str_detect(origin, "(?i)salisbury") ~ "Wicomico County",
+         
+         # Garrett County
+         str_detect(origin, "(?i)oakland") ~ "Garrett County",
+         
+         # Worcester County
+         str_detect(origin, "(?i)pocomoke") ~ "Worcester County",
+         
+         # Non-Maryland locations
+         str_detect(origin, "(?i)(^va\\.?$|virginia|^w\\.? ?va|washington.*d\\.?c|^del|^dc$|florida)") ~ "Outside Maryland",
+         
+         # Generic Maryland
+         str_detect(origin, "(?i)^md\\.?$") ~ "Maryland (unspecified)", 
+         
+         # Everything else remains as is
+         TRUE ~ origin
+         )) |> 
+      mutate(county_origin = str_remove_all(county_origin, ", Md."))
+```
+
+
+```{r}
+county_origin <- dc |> 
+  count(county_origin) |> 
+  arrange(desc(n))
+
+```
+
+# Map
+### Retrieve county polygons
+```{r}
+
+map <- get_acs(geography = "county", 
+              variables = c(number_households = "B19001_001", median_income = "B19013_001"), 
+               state = "MD", 
+               year = 2020, geometry = TRUE) %>% 
+  mutate(NAME = str_remove_all(NAME, ", Maryland")) |> 
+  select(GEOID, NAME) |> 
+  distinct()
+```
+
+### Join geocoordinates with death certificates
+
+```{r}
+
+dc_map <- dc |>  
+ inner_join(map, by=c("county_origin"="NAME")) 
+
+```
+
+### Data to a coordinate reference system
+transforms the coordinate reference system (CRS) of a spatial object. Need to do this when plotting data on web maps and need to use latitude/logitude
+```{r}
+
+dc_map <- dc_map |> 
+  st_as_sf() |> 
+  sf::st_transform(4326) |> 
+  add_count(county_origin, name = "county_count")
+```
+
+
+
+```{r}
+
+# Use colorFactor for categorical data
+pal <- colorFactor(
+  palette = "viridis",  # or "Set1", "Dark2", etc for categories
+  domain = dc_map$county_count
+)
+
+
+leafMap <- leaflet(data = dc_map) %>%
+  addProviderTiles(providers$Esri.WorldStreetMap) %>%
+  addPolygons(
+    color = ~pal(county_count),
+    weight = 2.5,
+    fillOpacity = 0.5,
+    label = ~paste0("Count of inmates from ", county_origin, ": ", county_count)
+  ) 
+  
+leafMap
+```
+
+
+**Your Turn**
+Split up into groups. Each group will tackle various towns, counties.
+Coordinate so you don't overlap.
+
+Clean and categorize more counties. Examine the data and modify the Massive clean origin codeblock, add more to the county_origin
+
+```{r}
+dc |> 
+  count(county_origin) |> 
+  arrange(desc(n))
+
+
+```
+
+#------------------------------------------------------------------------------
+#Part 2: Cleaning Death Certificate Data
+#------------------------------------------------------------------------------
+
+
+## Check for duplicate names
+```{r}
+
+dc |> 
+  count(name) |> 
+  filter(n > 1)
+
+```
+
+### create separate list of duplicates
+```{r}
+
+dupes <- dc |> 
+  count(name) |> 
+  filter(n > 1) |> 
+  select(name) |> 
+  mutate(name = str_squish(str_replace_all(name,'\\.',''))) |> 
+  pull(name)
+
+```
+
+### mark duplicates
+```{r}
+
+dc <- dc |> 
+  mutate(dupes = case_when(
+    name %in% dupes ~ "x")
+  ) |> 
+  arrange(personal_id) |> 
+  select(dupes, everything()) 
+
+
+```
+
+
+**Meet with students to discuss duplicates**
+
+
+# Causes of death
+I am combining the cause of death from different columns unless there was a mistake
+From the death certificate, we are counting all elements of the cause of death for a "causes of death" metric: Immediate cause of death; Intermediate (or antecedent) cause; Underlying cause of death. 
+```{r}
+
+dc <- dc |> 
+  mutate(cause_death_update = paste(cause_of_death, if_cause_of_death_different_put_that_here, sep = "; ")) |> 
+  mutate(cause_death_update = str_replace_all(cause_death_update, "NA", "")) |> 
+  #removing pesky leading, trailing semicolons
+  mutate(cause_death_update = str_remove_all(cause_death_update, "^;+|;+$")) |> 
+  mutate(cause_death_update = str_remove_all(cause_death_update, "^[;\\s]+|[;\\s]+$")) |> 
+  mutate(cause_death_update = str_replace_all (cause_death_update, "blank", "")) |> 
+  separate(col = cause_death_update, into = c("death_cause1", "death_cause2", "death_cause3"), sep = ";|,|and|or|&|/", extra = "drop")
+
+```
+
+# Extract, tabulate death case
+```{r}
+
+death_categories <- dc |>
+  pivot_longer(cols = c(death_cause1, death_cause2, death_cause3), 
+               names_to = "cause_type", 
+               values_to = "cause") |>
+  count(cause) |>
+  arrange(desc(n))
+  
+
+```
+
+#Categorize
+Split up into groups. Each group will tackle various diseases.
+Coordinate so you don't overlap.
+
+```{r}
+death_categories_group2 <- death_categories |> 
+  mutate(
+    
+    cause_clean = str_squish(cause),
+    
+    category = case_when(
+      # Tuberculosis (includes old terms: Phthisis, Consumption)
+      str_detect(cause_clean, "(?i)tubercul|phthisis|pthisis|consumption") ~ "tuberculosis",
+      
+      # Meningitis (all variants)
+      str_detect(cause_clean, "(?i)meningitis") ~ "meningitis",
+      
+      # Peritonitis (catches misspelling "peritonitus")
+      str_detect(cause_clean, "(?i)peritonit") ~ "peritonitis",
+      
+      # Cardiac (includes heart failure, cardiac conditions, mitral regurgitation)
+      str_detect(cause_clean, "(?i)cardiac|heart failure|heart trouble|mitral") ~ "cardiac_issues",
+      
+      # Exhaustion
+      str_detect(cause_clean, "(?i)exhaustion") ~ "exhaustion",
+      
+      # Gastric Ulcer
+      str_detect(cause_clean, "(?i)gastric.*ulcer|ulcer.*gastric") ~ "gastric_ulcer",
+      
+      # Keep as is if no match
+      TRUE ~ cause_clean
+    )) |> 
+  count(category) |> 
+  arrange(desc(n)) |>
+  filter(category %in% c("tuberculosis", "meningitis", "peritonitis", 
+                         "cardiac_issues", "exhaustion", "gastric_ulcer"))
+death_categories_group2
+```
+
+```{r}
+
+death_subcategories_group2 <- death_categories |> 
+  mutate(
+    cause_clean = str_squish(cause),
+    
+    category = case_when(
+      str_detect(cause_clean, "(?i)tubercul|phthisis|pthisis|consumption") ~ "tuberculosis",
+      str_detect(cause_clean, "(?i)meningitis") ~ "meningitis",
+      str_detect(cause_clean, "(?i)peritonit") ~ "peritonitis",
+      str_detect(cause_clean, "(?i)cardiac|heart failure|heart trouble|mitral") ~ "cardiac_issues",
+      str_detect(cause_clean, "(?i)exhaustion") ~ "exhaustion",
+      str_detect(cause_clean, "(?i)gastric.*ulcer|ulcer.*gastric") ~ "gastric_ulcer",
+      TRUE ~ cause_clean
+    )) |> 
+  filter(category %in% c("tuberculosis", "meningitis", "peritonitis", 
+                         "cardiac_issues", "exhaustion", "gastric_ulcer")) |>
+  select(category, cause_clean, n) |>
+  arrange(category, desc(n))
+
+death_subcategories_group2
+```
+
