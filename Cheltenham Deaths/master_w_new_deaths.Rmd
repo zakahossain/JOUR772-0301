@@ -1,0 +1,117 @@
+---
+title: "master_with_new_deaths"
+author: "Zaka Hossain"
+date: "2025-11-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This is my attempt at:
+1. Loading both datasets
+2. Aligning column structures from new_recorded_deaths to match master index format
+3. Joining the tables
+4. Identifying any duplicates or issues
+Not exactly in that order.
+
+My memo: https://docs.google.com/document/d/1cDevx-di4XksnXoyi5OYhV8mA47_MiHQMpNRDPVCGOc/edit?usp=sharing
+
+```{r}
+library(tidyverse)
+library(readr)
+library(lubridate)
+```
+
+```{r}
+master_index <- read_csv("MASTER_INDEX_11_8_2025.csv")
+new_deaths <- read_csv("new_recorded_deaths.csv")
+```
+```{r}
+# Transforming new_deaths to align with master index structure -- keeps things organised b/f joining .. takes away a lot of headaches that would occur down the line
+
+new_deaths_aligned <- new_deaths %>%
+  mutate(
+    # assuming these are all cheltenham related based on context
+    facility = "cheltenham",
+    
+    # it made sense to assign personal_id after joining, so it will be done in a following codeblock
+    personal_id = NA,
+    
+    # clean and standardize name
+    name = Name,
+    
+    # getting death year from 'When' column
+    death_year = case_when(
+      str_detect(When, "^\\d{4}$") ~ as.numeric(When),
+      str_detect(When, "~\\d{4}$") ~ as.numeric(str_extract(When, "\\d{4}")),
+      TRUE ~ NA_real_
+    ),
+    
+    # setting death_date as empty for now (would need more detailed data)
+    death_date = NA_character_,
+    
+    # birth_date and birth_year unknown for these entries
+    birth_date = NA_character_,
+    birth_year = NA_real_,
+    
+    # approx_age unknown
+    approx_age = NA_real_,
+    
+    # adding source information
+    errors = case_when(
+      `Death certificate accessible on Find A Grave` == "No" ~ "No death certificate",
+      TRUE ~ NA_character_
+    ),
+    
+    # keeping it clean by combining relevant information into explanations
+    explanations = paste(
+      "Source:", What, "|",
+      "Buried at Cheltenham:", `Buried at Cheltenham`, "|",
+      if_else(!is.na(Notes) & Notes != "", paste("Notes:", Notes), "")
+    ) %>% str_trim(),
+    
+    # comparing w record
+    `comparison to record` = "New entry from recorded deaths list"
+  ) %>%
+  # matching w master index
+  select(
+    facility, 
+    personal_id, 
+    name, 
+    birth_date, 
+    death_date, 
+    birth_year, 
+    death_year, 
+    approx_age, 
+    errors, 
+    explanations, 
+    `comparison to record`
+  )
+```
+```{r assign-ids}
+new_deaths_aligned <- new_deaths_aligned %>%
+  mutate(personal_id = row_number() + 145)
+```
+
+# Checking for name matches (if any)
+
+```{r}
+potential_duplicates <- new_deaths_aligned %>%
+  mutate(name_clean = str_to_lower(str_trim(name))) %>%
+  inner_join(
+    master_index %>% 
+      mutate(name_clean = str_to_lower(str_trim(name))),
+    by = "name_clean",
+    suffix = c("_new", "_existing")
+  ) %>%
+  select(name_new, death_year_new, name_existing, death_year_existing, personal_id_existing)
+```
+
+```{r}
+# Combine master index with new deaths
+combined_data <- bind_rows(master_index, new_deaths_aligned)
+```
+
+
