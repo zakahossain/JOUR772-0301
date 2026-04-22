@@ -34,7 +34,7 @@ library(formattable)
 ```{r}
 
 gs4_deauth()  
-dc <- read_sheet("https://docs.google.com/spreadsheets/d/13CthhhfLHiPZqr1P67SCa9BVUyb5Rl6OBhUwvqawDEk/edit?usp=sharing", sheet = "Form Responses 1", col_types ="c") |> 
+dc <- read_sheet("https://docs.google.com/spreadsheets/d/13CthhhfLHiPZqr1P67SCa9BVUyb5Rl6OBhUwvqawDEk/edit?usp=sharing", sheet = "master_deaths_dec_5", col_types ="c") |> 
      clean_names() |> 
     mutate(approx_age = as.numeric(str_extract(age_on_death_certificate, "^\\d+")),
          death_date1 = death_date)
@@ -132,9 +132,9 @@ I am combining the cause of death and if different columns unless there was a mi
 ```{r}
 
 dc <- dc |> 
-  mutate(cause_death_update = paste(cause_of_death, if_cause_of_death_different_put_that_here, sep = "; ")) |> 
-   mutate(cause_death_update = str_replace_all(cause_death_update, "(?i) & ", "; ")) |>
-  mutate(cause_death_update = str_replace_all(cause_death_update, "NA", "")) |> 
+  #mutate(cause_death_update = paste(cause_of_death, if_cause_of_death_different_put_that_here, sep = "; ")) |> 
+   #mutate(cause_death_update = str_replace_all(cause_death_update, "(?i) & ", "; ")) |>
+  #mutate(cause_death_update = str_replace_all(cause_death_update, "NA", "")) |> 
   #removing pesky leading, trailing semicolons
   mutate(cause_death_update = str_remove_all(cause_death_update, "^;+|;+$")) |> 
   mutate(cause_death_update = str_remove_all(cause_death_update, "^[;\\s]+|[;\\s]+$")) |> 
@@ -147,26 +147,26 @@ dc <- dc |>
 ```{r}
 
 dc2 <- dc |> 
-  mutate(cause_death_update = str_squish(str_remove_all(cause_death_update, "[[:punct:]]"))) |> 
+  mutate(cause_of_death = str_squish(str_remove_all(cause_of_death, "[[:punct:]]"))) |> 
   mutate(
-    tuberculosis = str_detect(cause_death_update, "(?i)tubercul|phthisis|pthisis|consumption|terberculosis"),
-    pneumonia = str_detect(cause_death_update, "(?i)pneumonia"), 
-    typhoid = str_detect(cause_death_update, "(?i)typhoid"),
-    asthma = str_detect(cause_death_update, "(?i)asthma"),
-    meningitis = str_detect(cause_death_update, "(?i)meningitis"),
-    peritonitis = str_detect(cause_death_update, "(?i)peritonit"),
-    cardiac_issues = str_detect(cause_death_update, "(?i)cardiac|heart failure|heart trouble|mitral"),
-    exhaustion = str_detect(cause_death_update, "(?i)exhaustion"),
-    gastric_ulcer = str_detect(cause_death_update, "(?i)gastric.*ulcer|ulcer.*gastric"),
-    encephalitis = str_detect(cause_death_update, "(?i)encephalitis"),
-    malaria = str_detect(cause_death_update, "(?i)malaria"),
-    asphyxia = str_detect(cause_death_update, "(?i)immediate: asphyxia"),
-    asthenia = str_detect(cause_death_update, "(?i)asthenia"),
-    lung_disease = str_detect(cause_death_update, "(?i)lungs|oedema of lungs|rage of lungs"),
-    hemorrhage = str_detect(cause_death_update, "(?i)hem|rhage|hemm|y hemm|wound of groin by hog, hem"),
-    heart_failure = str_detect(cause_death_update, "(?i)heart failure"),
-    influenza = str_detect(cause_death_update, "(?i)influenza"),
-    no_details = is.na(cause_death_update) | str_detect(cause_death_update, "(?i)NA|missing|unknown|information")
+    tuberculosis = str_detect(cause_of_death, "(?i)tubercul|phthisis|pthisis|consumption|terberculosis"),
+    pneumonia = str_detect(cause_of_death, "(?i)pneumonia"), 
+    typhoid = str_detect(cause_of_death, "(?i)typhoid"),
+    asthma = str_detect(cause_of_death, "(?i)asthma"),
+    meningitis = str_detect(cause_of_death, "(?i)meningitis"),
+    peritonitis = str_detect(cause_of_death, "(?i)peritonit"),
+    cardiac_issues = str_detect(cause_of_death, "(?i)cardiac|heart failure|heart trouble|mitral"),
+    exhaustion = str_detect(cause_of_death, "(?i)exhaustion"),
+    gastric_ulcer = str_detect(cause_of_death, "(?i)gastric.*ulcer|ulcer.*gastric"),
+    encephalitis = str_detect(cause_of_death, "(?i)encephalitis"),
+    malaria = str_detect(cause_of_death, "(?i)malaria"),
+    asphyxia = str_detect(cause_of_death, "(?i)immediate: asphyxia"),
+    asthenia = str_detect(cause_of_death, "(?i)asthenia"),
+    lung_disease = str_detect(cause_of_death, "(?i)lungs|oedema of lungs|rage of lungs"),
+    hemorrhage = str_detect(cause_of_death, "(?i)hem|rhage|hemm|y hemm|wound of groin by hog, hem"),
+    heart_failure = str_detect(cause_of_death, "(?i)heart failure"),
+    influenza = str_detect(cause_of_death, "(?i)influenza"),
+    no_details = is.na(cause_of_death) | str_detect(cause_of_death, "(?i)NA|missing|unknown|information")
   )
 ```
 
@@ -211,7 +211,11 @@ summary_long |>
   arrange(desc(total))
 ```
 
-
+```{r}
+tb_by_year <- summary_long |> 
+  filter(cause == "tuberculosis") |> 
+  group_by(death_year) 
+```
 
 ### Tuberculosis by year
 ```{r}
@@ -224,7 +228,7 @@ summary_long |>
   theme(legend.position = "none") +
   labs(title = "Tuberculosis Deaths at Cheltenham, Jessup",
        subtitle = "From 1880-1941",
-       caption = "Graphic by Rob Wells, 11-30-2023",
+       caption = "Graphic by Rob Wells, 11-30-2025",
        y="Number of Deaths",
        x="Year")
 
